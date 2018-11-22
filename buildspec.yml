@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+    pre_build:
+        commands:
+            - aws --version
+            - docker login --username ${DOCKERHUB_USERNAME} --password ${DOCKERHUB_PASSWORD}
+            - REPOSITORY_NAME=gbmcarlos/skellington-installer
+            - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION}
+            - echo ${AWS_DEFAULT_REGION}
+            - COMMIT_HASH=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c 1-7)
+            - IMAGE_TAG=${COMMIT_HASH:=latest}
+    build:
+        commands:
+            - docker build -t ${REPOSITORY_NAME}:latest --build-arg APP_RELEASE=${CODEBUILD_RESOLVED_SOURCE_VERSION} .
+            - docker tag ${REPOSITORY_NAME}:latest ${REPOSITORY_NAME}:${IMAGE_TAG}
+    post_build:
+        commands:
+            - docker push ${REPOSITORY_NAME}:latest
+            - docker push ${REPOSITORY_NAME}:${IMAGE_TAG}
